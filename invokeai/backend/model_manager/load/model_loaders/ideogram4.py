@@ -52,8 +52,13 @@ class Ideogram4DiffusersModel(GenericDiffusersLoader):
         variant = repo_variant.value if repo_variant else None
         submodel_path = model_path / submodel_type.value
 
-        # Ideogram 4 requires bfloat16 for correct inference. low_cpu_mem_usage=False avoids meta tensors
-        # for any weights the model class creates that are not present in the checkpoint.
+        # Ideogram 4 requires bfloat16 for correct inference.
+        #
+        # low_cpu_mem_usage=True builds each submodel on the meta device and assign-loads the checkpoint,
+        # skipping the allocation + random-init of the ~9B transformers and ~8B encoder that the checkpoint
+        # immediately overwrites (faster load, lower peak RAM). Unlike FLUX.2 Klein - whose optional
+        # guidance_embed layers are absent from the checkpoint and so need real init - Ideogram 4's only
+        # non-checkpoint tensors are the rotary inv_freq buffers, which from_pretrained recomputes.
         #
         # Exception: the Qwen3-VL text encoder produces NaN hidden states in bfloat16 on MPS, so it is
         # loaded in float32 there. It runs once per prompt, so the extra memory/time is acceptable.
@@ -67,7 +72,7 @@ class Ideogram4DiffusersModel(GenericDiffusersLoader):
                     torch_dtype=dtype,
                     variant=variant,
                     local_files_only=True,
-                    low_cpu_mem_usage=False,
+                    low_cpu_mem_usage=True,
                 )
             except OSError as e:
                 if variant and "no file named" in str(e):
@@ -76,7 +81,7 @@ class Ideogram4DiffusersModel(GenericDiffusersLoader):
                         submodel_path,
                         torch_dtype=dtype,
                         local_files_only=True,
-                        low_cpu_mem_usage=False,
+                        low_cpu_mem_usage=True,
                     )
                 else:
                     raise e
