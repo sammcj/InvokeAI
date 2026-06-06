@@ -9092,6 +9092,11 @@ export type components = {
             max_tokens?: number;
             /** System Prompt */
             system_prompt?: string | null;
+            /**
+             * System Prompt Preset
+             * @description Named server-side system-prompt preset (e.g. 'ideogram4_v1'). Resolves to a built-in system prompt and output post-processor; overrides 'system_prompt' when set.
+             */
+            system_prompt_preset?: string | null;
         };
         /** ExpandPromptResponse */
         ExpandPromptResponse: {

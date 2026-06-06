@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 from pathlib import Path
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 import torch
 from dynamicprompts.generators import CombinatorialPromptGenerator, RandomPromptGenerator
@@ -17,6 +17,7 @@ from invokeai.app.api.dependencies import ApiDependencies
 from invokeai.app.api.routers._access import assert_image_read_access
 from invokeai.app.services.image_files.image_files_common import ImageFileNotFoundException
 from invokeai.app.services.model_records.model_records_base import UnknownModelException
+from invokeai.backend.ideogram4.magic_prompt import get_preset as get_prompt_expansion_preset
 from invokeai.backend.llava_onevision_pipeline import LlavaOnevisionPipeline
 from invokeai.backend.model_manager.taxonomy import ModelType
 from invokeai.backend.text_llm_pipeline import DEFAULT_SYSTEM_PROMPT, TextLLMPipeline
@@ -74,6 +75,11 @@ class ExpandPromptRequest(BaseModel):
     model_key: str
     max_tokens: int = Field(default=300, ge=1, le=2048)
     system_prompt: str | None = None
+    system_prompt_preset: str | None = Field(
+        default=None,
+        description="Named server-side system-prompt preset (e.g. 'ideogram4_v1'). Resolves to a built-in "
+        "system prompt and output post-processor; overrides 'system_prompt' when set.",
+    )
 
 
 class ExpandPromptResponse(BaseModel):
@@ -90,13 +96,31 @@ def _resolve_model_path(model_config_path: str) -> Path:
     return (base_models_path / model_path).resolve()
 
 
-def _run_expand_prompt(prompt: str, model_key: str, max_tokens: int, system_prompt: str | None) -> str:
-    """Run text LLM inference synchronously (called from thread)."""
+def _run_expand_prompt(
+    prompt: str,
+    model_key: str,
+    max_tokens: int,
+    system_prompt: str | None,
+    system_prompt_preset: str | None = None,
+) -> str:
+    """Run text LLM inference synchronously (called from thread).
+
+    A ``system_prompt_preset`` selects a built-in system prompt + output post-processor (e.g. the
+    Ideogram 4 magic prompt) and takes precedence over an explicit ``system_prompt``.
+    """
     model_manager = ApiDependencies.invoker.services.model_manager
     model_config = model_manager.store.get_model(model_key)
 
     if model_config.type != ModelType.TextLLM:
         raise ValueError(f"Model '{model_key}' is not a TextLLM model (got {model_config.type})")
+
+    postprocess: Callable[[str], str] | None = None
+    if system_prompt_preset is not None:
+        preset = get_prompt_expansion_preset(system_prompt_preset)
+        if preset is None:
+            raise ValueError(f"Unknown system_prompt_preset '{system_prompt_preset}'")
+        system_prompt = preset.system_prompt
+        postprocess = preset.postprocess
 
     with _model_load_lock:
         loaded_model = model_manager.load.load_model(model_config)
@@ -114,6 +138,9 @@ def _run_expand_prompt(prompt: str, model_key: str, max_tokens: int, system_prom
             device=model_device,
             dtype=TorchDevice.choose_torch_dtype(),
         )
+
+    if postprocess is not None:
+        output = postprocess(output)
 
     return output
 
@@ -134,6 +161,7 @@ async def expand_prompt(current_user: CurrentUserOrDefault, body: ExpandPromptRe
             body.model_key,
             body.max_tokens,
             body.system_prompt,
+            body.system_prompt_preset,
         )
         return ExpandPromptResponse(expanded_prompt=expanded)
     except UnknownModelException:

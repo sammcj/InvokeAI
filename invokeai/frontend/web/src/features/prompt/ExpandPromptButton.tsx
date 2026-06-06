@@ -15,9 +15,14 @@ import {
 } from '@invoke-ai/ui-library';
 import { useAppDispatch, useAppSelector } from 'app/store/storeHooks';
 import { useDisclosure } from 'common/hooks/useBoolean';
-import { positivePromptChanged, selectPositivePrompt } from 'features/controlLayers/store/paramsSlice';
+import {
+  positivePromptChanged,
+  selectMainModelConfig,
+  selectPositivePrompt,
+} from 'features/controlLayers/store/paramsSlice';
 import { setInstallModelsTabByName } from 'features/modelManagerV2/store/installModelsStore';
 import { ModelPicker } from 'features/parameters/components/ModelPicker';
+import { getPromptExpansionArgs } from 'features/prompt/getPromptExpansionArgs';
 import { setPromptUndo } from 'features/prompt/promptUndo';
 import { navigationApi } from 'features/ui/layouts/navigation-api';
 import { memo, useCallback, useState } from 'react';
@@ -35,6 +40,7 @@ export const ExpandPromptButton = memo(() => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const prompt = useAppSelector(selectPositivePrompt);
+  const mainModelConfig = useAppSelector(selectMainModelConfig);
   const [modelConfigs] = useTextLLMModels();
   const popover = useDisclosure(false);
   const [selectedModel, setSelectedModel] = useState<AnyModelConfig | undefined>(undefined);
@@ -54,6 +60,7 @@ export const ExpandPromptButton = memo(() => {
       const result = await expandPrompt({
         prompt,
         model_key: selectedModel.key,
+        ...getPromptExpansionArgs(mainModelConfig?.base),
       }).unwrap();
       if (result.expanded_prompt) {
         setPromptUndo(prompt);
@@ -63,7 +70,7 @@ export const ExpandPromptButton = memo(() => {
     } catch {
       // Error is handled by RTK Query
     }
-  }, [selectedModel, prompt, expandPrompt, dispatch, popover]);
+  }, [selectedModel, prompt, expandPrompt, mainModelConfig?.base, dispatch, popover]);
 
   const handleOpenModelManager = useCallback(() => {
     popover.close();

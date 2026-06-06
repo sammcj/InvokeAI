@@ -17,6 +17,7 @@ type ExpandPromptRequest = {
   model_key: string;
   max_tokens?: number;
   system_prompt?: string | null;
+  system_prompt_preset?: string | null;
 };
 
 type ExpandPromptResponse = {
