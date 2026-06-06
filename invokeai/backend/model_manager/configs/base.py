@@ -18,6 +18,7 @@ from invokeai.backend.model_manager.model_on_disk import ModelOnDisk
 from invokeai.backend.model_manager.taxonomy import (
     AnyVariant,
     BaseModelType,
+    Ideogram4VariantType,
     ModelFormat,
     ModelRepoVariant,
     ModelSourceType,
@@ -198,6 +199,16 @@ class Config_Base(ABC, BaseModel):
                     tag_strings.append(variant_)
                 else:
                     raise ValueError("CLIP Embed model config dict must include a 'variant' field")
+
+            # Special case: Ideogram 4 includes its variant in the tag (see Main_Diffusers_Ideogram4_Config),
+            # so the discriminator must append it to match.
+            if type_ == ModelType.Main.value and base_ == BaseModelType.Ideogram4.value:
+                variant_ = v.get("variant")
+                if isinstance(variant_, Enum):
+                    variant_ = variant_.value
+                elif variant_ is not None and not isinstance(variant_, str):
+                    raise ValueError("Model config dict 'variant' field must be a string or Enum")
+                tag_strings.append(variant_ or Ideogram4VariantType.V4.value)
 
             return ".".join(tag_strings)
         else:

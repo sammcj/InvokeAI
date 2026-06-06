@@ -3,7 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from invokeai.backend.model_manager.configs.factory import ModelConfigFactory
-from invokeai.backend.model_manager.taxonomy import BaseModelType, ModelFormat, ModelType
+from invokeai.backend.model_manager.taxonomy import BaseModelType, Ideogram4VariantType, ModelFormat, ModelType
 
 
 def _write_pipeline(path: Path, class_name: str) -> None:
@@ -35,6 +35,22 @@ def test_ideogram4_pipeline_is_classified_as_ideogram4_main_diffusers() -> None:
         assert config.type == ModelType.Main
         assert config.format == ModelFormat.Diffusers
         assert config.variant == "v4"
+
+
+def test_ideogram4_config_round_trips_through_the_union() -> None:
+    # The Ideogram 4 config carries a variant, so its union tag is "main.diffusers.ideogram4.v4". The
+    # discriminator must compute the same tag from a plain dict, otherwise re-loading a saved record (as
+    # the installer and DB do) fails with union_tag_invalid.
+    with TemporaryDirectory() as tmpdir:
+        model_path = Path(tmpdir)
+        _write_pipeline(model_path, "Ideogram4Pipeline")
+        probed = ModelConfigFactory.from_model_on_disk(model_path, allow_unknown=True).config
+        assert probed is not None
+
+        reloaded = ModelConfigFactory.from_dict(probed.model_dump())
+
+        assert reloaded.base == BaseModelType.Ideogram4
+        assert reloaded.variant == Ideogram4VariantType.V4
 
 
 def test_non_ideogram4_pipeline_is_not_classified_as_ideogram4() -> None:
