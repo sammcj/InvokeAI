@@ -25,6 +25,7 @@ from invokeai.backend.model_manager.taxonomy import (
     BaseModelType,
     Flux2VariantType,
     FluxVariantType,
+    Ideogram4VariantType,
     ModelFormat,
     ModelType,
     ModelVariantType,
@@ -892,6 +893,41 @@ class Main_Diffusers_Flux2_Config(Diffusers_Config_Base, Main_Config_Base, Confi
 
         # Default to 4B
         return Flux2VariantType.Klein4B
+
+
+class Main_Diffusers_Ideogram4_Config(Diffusers_Config_Base, Main_Config_Base, Config_Base):
+    """Model config for Ideogram 4 models in diffusers format.
+
+    Ideogram 4 is a single-stream DiT (Ideogram4Transformer2DModel) with a Qwen3-VL text encoder
+    and the FLUX.2 KL-VAE (AutoencoderKLFlux2). It ships as a single architecture, so there is only
+    one variant.
+    """
+
+    base: Literal[BaseModelType.Ideogram4] = Field(BaseModelType.Ideogram4)
+    variant: Ideogram4VariantType = Field(default=Ideogram4VariantType.V4)
+
+    @classmethod
+    def from_model_on_disk(cls, mod: ModelOnDisk, override_fields: dict[str, Any]) -> Self:
+        raise_if_not_dir(mod)
+
+        raise_for_override_fields(cls, override_fields)
+
+        raise_for_class_name(
+            common_config_paths(mod.path),
+            {
+                "Ideogram4Pipeline",
+            },
+        )
+
+        variant = override_fields.pop("variant", None) or Ideogram4VariantType.V4
+
+        repo_variant = override_fields.pop("repo_variant", None) or cls._get_repo_variant_or_raise(mod)
+
+        return cls(
+            **override_fields,
+            variant=variant,
+            repo_variant=repo_variant,
+        )
 
 
 class Main_SD_Diffusers_Config_Base(Diffusers_Config_Base, Main_Config_Base):

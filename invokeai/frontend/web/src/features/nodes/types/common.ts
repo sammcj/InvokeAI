@@ -95,6 +95,7 @@ export const zBaseModelType = z.enum([
   'sdxl-refiner',
   'flux',
   'flux2',
+  'ideogram4',
   'cogview4',
   'qwen-image',
   'z-image',
@@ -110,6 +111,7 @@ export const zMainModelBase = z.enum([
   'sdxl',
   'flux',
   'flux2',
+  'ideogram4',
   'cogview4',
   'qwen-image',
   'z-image',
@@ -144,6 +146,7 @@ export type ModelType = z.infer<typeof zModelType>;
 export const zSubModelType = z.enum([
   'unet',
   'transformer',
+  'unconditional_transformer',
   'text_encoder',
   'text_encoder_2',
   'text_encoder_3',
@@ -161,6 +164,7 @@ export const zClipVariantType = z.enum(['large', 'gigantic']);
 export const zModelVariantType = z.enum(['normal', 'inpaint', 'depth']);
 export const zFluxVariantType = z.enum(['dev', 'dev_fill', 'schnell']);
 export const zFlux2VariantType = z.enum(['klein_4b', 'klein_4b_base', 'klein_9b', 'klein_9b_base']);
+export const zIdeogram4VariantType = z.enum(['v4']);
 export const zZImageVariantType = z.enum(['turbo', 'zbase']);
 const zQwenImageVariantType = z.enum(['generate', 'edit']);
 export const zQwen3VariantType = z.enum(['qwen3_4b', 'qwen3_8b', 'qwen3_06b']);
@@ -169,6 +173,7 @@ export const zAnyModelVariant = z.union([
   zClipVariantType,
   zFluxVariantType,
   zFlux2VariantType,
+  zIdeogram4VariantType,
   zZImageVariantType,
   zQwenImageVariantType,
   zQwen3VariantType,

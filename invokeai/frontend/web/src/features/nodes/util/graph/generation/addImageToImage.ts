@@ -25,6 +25,7 @@ type AddImageToImageArg = {
     | 'i2l'
     | 'flux_vae_encode'
     | 'flux2_vae_encode'
+    | 'ideogram4_i2l'
     | 'sd3_i2l'
     | 'cogview4_i2l'
     | 'qwen_image_i2l'
@@ -51,6 +52,7 @@ export const addImageToImage = async ({
     | 'l2i'
     | 'flux_vae_decode'
     | 'flux2_vae_decode'
+    | 'ideogram4_vae_decode'
     | 'sd3_l2i'
     | 'cogview4_l2i'
     | 'qwen_image_l2i'
@@ -71,7 +73,8 @@ export const addImageToImage = async ({
     denoise.type === 'flux2_denoise' ||
     denoise.type === 'sd3_denoise' ||
     denoise.type === 'z_image_denoise' ||
-    denoise.type === 'anima_denoise'
+    denoise.type === 'anima_denoise' ||
+    denoise.type === 'ideogram4_denoise'
   ) {
     denoise.width = scaledSize.width;
     denoise.height = scaledSize.height;

@@ -349,6 +349,16 @@ class QwenImageConditioningField(BaseModel):
     conditioning_name: str = Field(description="The name of conditioning tensor")
 
 
+class Ideogram4ConditioningField(BaseModel):
+    """An Ideogram 4 conditioning tensor primitive value.
+
+    Holds the stacked Qwen3-VL text features (13 activation layers concatenated to a 53248-dim
+    per-token vector) for the text tokens of a single prompt.
+    """
+
+    conditioning_name: str = Field(description="The name of conditioning tensor")
+
+
 class AnimaConditioningField(BaseModel):
     """An Anima conditioning tensor primitive value.
 

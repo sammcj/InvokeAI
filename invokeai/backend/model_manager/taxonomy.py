@@ -58,6 +58,9 @@ class BaseModelType(str, Enum):
     """Indicates the model is associated with Qwen Image Edit 2511 model architecture."""
     Anima = "anima"
     """Indicates the model is associated with Anima model architecture (Cosmos Predict2 DiT + LLM Adapter)."""
+    Ideogram4 = "ideogram4"
+    """Indicates the model is associated with the Ideogram 4 model architecture (single-stream DiT with a
+    Qwen3-VL text encoder and the FLUX.2 KL-VAE)."""
     Unknown = "unknown"
     """Indicates the model's base architecture is unknown."""
 
@@ -93,6 +96,7 @@ class SubModelType(str, Enum):
 
     UNet = "unet"
     Transformer = "transformer"
+    TransformerUnconditional = "unconditional_transformer"
     TextEncoder = "text_encoder"
     TextEncoder2 = "text_encoder_2"
     TextEncoder3 = "text_encoder_3"
@@ -143,6 +147,13 @@ class Flux2VariantType(str, Enum):
 
     Klein9BBase = "klein_9b_base"
     """Flux2 Klein 9B Base variant - undistilled foundation model using Qwen3 8B text encoder."""
+
+
+class Ideogram4VariantType(str, Enum):
+    """Ideogram 4 model variants."""
+
+    V4 = "v4"
+    """Ideogram 4 - 9.3B single-stream DiT with a Qwen3-VL-8B text encoder."""
 
 
 class ZImageVariantType(str, Enum):
@@ -246,6 +257,7 @@ AnyVariant: TypeAlias = Union[
     ClipVariantType,
     FluxVariantType,
     Flux2VariantType,
+    Ideogram4VariantType,
     ZImageVariantType,
     QwenImageVariantType,
     Qwen3VariantType,
@@ -255,6 +267,7 @@ variant_type_adapter = TypeAdapter[
     | ClipVariantType
     | FluxVariantType
     | Flux2VariantType
+    | Ideogram4VariantType
     | ZImageVariantType
     | QwenImageVariantType
     | Qwen3VariantType
@@ -263,6 +276,7 @@ variant_type_adapter = TypeAdapter[
     | ClipVariantType
     | FluxVariantType
     | Flux2VariantType
+    | Ideogram4VariantType
     | ZImageVariantType
     | QwenImageVariantType
     | Qwen3VariantType

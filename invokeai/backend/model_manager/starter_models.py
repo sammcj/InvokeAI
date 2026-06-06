@@ -1022,6 +1022,17 @@ flux2_klein_9b_gguf_q8 = StarterModel(
 )
 # endregion
 
+# region Ideogram 4
+ideogram4_bf16 = StarterModel(
+    name="Ideogram 4 (Diffusers)",
+    base=BaseModelType.Ideogram4,
+    source="CalamitousFelicitousness/Ideogram-4-bf16-Diffusers",
+    description="Ideogram 4 in Diffusers format - includes the conditional and unconditional "
+    "transformers, AutoencoderKLFlux2 VAE and Qwen3-VL text encoder. Non-commercial licence. ~54GB",
+    type=ModelType.Main,
+)
+# endregion
+
 # region Z-Image
 z_image_qwen3_encoder = StarterModel(
     name="Z-Image Qwen3 Text Encoder",
@@ -1663,6 +1674,7 @@ STARTER_MODELS: list[StarterModel] = [
     flux2_klein_9b_gguf_q8,
     flux2_klein_qwen3_4b_encoder,
     flux2_klein_qwen3_8b_encoder,
+    ideogram4_bf16,
     cogview4,
     qwen_image_vae,
     qwen_vl_encoder_fp8,

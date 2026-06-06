@@ -213,6 +213,7 @@ export const isMainModelWithoutUnet = (modelLoader: Invocation<MainModelLoaderNo
   return (
     modelLoader.type === 'flux_model_loader' ||
     modelLoader.type === 'flux2_klein_model_loader' ||
+    modelLoader.type === 'ideogram4_model_loader' ||
     modelLoader.type === 'sd3_model_loader' ||
     modelLoader.type === 'cogview4_model_loader' ||
     modelLoader.type === 'qwen_image_model_loader' ||
@@ -242,7 +243,8 @@ export const getDenoisingStartAndEnd = (state: RootState): { denoising_start: nu
       };
     }
     case 'flux':
-    case 'flux2': {
+    case 'flux2':
+    case 'ideogram4': {
       if (model.base === 'flux' && model.variant === 'dev_fill') {
         // This is a FLUX Fill model - we always denoise fully
         return {

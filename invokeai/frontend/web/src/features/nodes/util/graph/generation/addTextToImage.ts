@@ -26,6 +26,7 @@ export const addTextToImage = ({
   | 'l2i'
   | 'flux_vae_decode'
   | 'flux2_vae_decode'
+  | 'ideogram4_vae_decode'
   | 'sd3_l2i'
   | 'cogview4_l2i'
   | 'qwen_image_l2i'
@@ -44,7 +45,8 @@ export const addTextToImage = ({
     denoise.type === 'flux2_denoise' ||
     denoise.type === 'sd3_denoise' ||
     denoise.type === 'z_image_denoise' ||
-    denoise.type === 'anima_denoise'
+    denoise.type === 'anima_denoise' ||
+    denoise.type === 'ideogram4_denoise'
   ) {
     denoise.width = scaledSize.width;
     denoise.height = scaledSize.height;
