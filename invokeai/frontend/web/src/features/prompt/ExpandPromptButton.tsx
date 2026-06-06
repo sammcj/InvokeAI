@@ -2,6 +2,8 @@ import type { SystemStyleObject } from '@invoke-ai/ui-library';
 import {
   Button,
   Flex,
+  FormControl,
+  FormLabel,
   IconButton,
   Popover,
   PopoverArrow,
@@ -10,13 +12,18 @@ import {
   PopoverTrigger,
   Portal,
   spinAnimation,
+  Switch,
   Text,
   Tooltip,
 } from '@invoke-ai/ui-library';
 import { useAppDispatch, useAppSelector } from 'app/store/storeHooks';
 import { useDisclosure } from 'common/hooks/useBoolean';
 import {
+  ideogram4MagicPromptEnabledChanged,
+  ideogram4MagicPromptModelSelected,
   positivePromptChanged,
+  selectIdeogram4MagicPromptEnabled,
+  selectIdeogram4MagicPromptModel,
   selectMainModelConfig,
   selectPositivePrompt,
 } from 'features/controlLayers/store/paramsSlice';
@@ -25,7 +32,8 @@ import { ModelPicker } from 'features/parameters/components/ModelPicker';
 import { getPromptExpansionArgs } from 'features/prompt/getPromptExpansionArgs';
 import { setPromptUndo } from 'features/prompt/promptUndo';
 import { navigationApi } from 'features/ui/layouts/navigation-api';
-import { memo, useCallback, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PiSparkleBold } from 'react-icons/pi';
 import { useExpandPromptMutation } from 'services/api/endpoints/utilities';
@@ -41,16 +49,39 @@ export const ExpandPromptButton = memo(() => {
   const dispatch = useAppDispatch();
   const prompt = useAppSelector(selectPositivePrompt);
   const mainModelConfig = useAppSelector(selectMainModelConfig);
+  const magicPromptModel = useAppSelector(selectIdeogram4MagicPromptModel);
+  const autoExpandEnabled = useAppSelector(selectIdeogram4MagicPromptEnabled);
   const [modelConfigs] = useTextLLMModels();
   const popover = useDisclosure(false);
-  const [selectedModel, setSelectedModel] = useState<AnyModelConfig | undefined>(undefined);
+  const [localSelectedModel, setLocalSelectedModel] = useState<AnyModelConfig | undefined>(undefined);
   const [expandPrompt, { isLoading }] = useExpandPromptMutation();
 
   const hasModels = modelConfigs.length > 0;
+  // For Ideogram 4 the chosen LLM is persisted (shared with auto-expand on generate); other models keep
+  // an ephemeral, click-only selection.
+  const isIdeogram4 = mainModelConfig?.base === 'ideogram4';
+  const selectedModel = useMemo(
+    () => (isIdeogram4 ? modelConfigs.find((config) => config.key === magicPromptModel?.key) : localSelectedModel),
+    [isIdeogram4, modelConfigs, magicPromptModel?.key, localSelectedModel]
+  );
 
-  const handleModelChange = useCallback((model: AnyModelConfig) => {
-    setSelectedModel(model);
-  }, []);
+  const handleModelChange = useCallback(
+    (model: AnyModelConfig) => {
+      if (isIdeogram4) {
+        dispatch(ideogram4MagicPromptModelSelected(model));
+      } else {
+        setLocalSelectedModel(model);
+      }
+    },
+    [isIdeogram4, dispatch]
+  );
+
+  const handleAutoExpandChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      dispatch(ideogram4MagicPromptEnabledChanged(e.target.checked));
+    },
+    [dispatch]
+  );
 
   const handleExpand = useCallback(async () => {
     if (!selectedModel || !prompt.trim()) {
@@ -117,6 +148,17 @@ export const ExpandPromptButton = memo(() => {
                   onChange={handleModelChange}
                   placeholder={t('prompt.selectTextLLM')}
                 />
+                {isIdeogram4 && (
+                  <FormControl flexDir="column" alignItems="flex-start" gap={1}>
+                    <Flex w="full" justifyContent="space-between" alignItems="center">
+                      <FormLabel m={0}>{t('prompt.autoExpandOnGenerate')}</FormLabel>
+                      <Switch isChecked={autoExpandEnabled} onChange={handleAutoExpandChange} />
+                    </Flex>
+                    <Text fontSize="xs" color="base.300">
+                      {t('prompt.autoExpandOnGenerateDescription')}
+                    </Text>
+                  </FormControl>
+                )}
                 <Button
                   size="sm"
                   colorScheme="invokeBlue"

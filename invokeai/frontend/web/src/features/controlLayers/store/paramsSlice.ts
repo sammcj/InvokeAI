@@ -217,6 +217,19 @@ const slice = createSlice({
       }
       state.zImageQwen3SourceModel = result.data;
     },
+    ideogram4MagicPromptModelSelected: (
+      state,
+      action: PayloadAction<{ key: string; name: string; base: string } | null>
+    ) => {
+      const result = zParamsState.shape.ideogram4MagicPromptModel.safeParse(action.payload);
+      if (!result.success) {
+        return;
+      }
+      state.ideogram4MagicPromptModel = result.data;
+    },
+    ideogram4MagicPromptEnabledChanged: (state, action: PayloadAction<boolean>) => {
+      state.ideogram4MagicPromptEnabled = action.payload;
+    },
     animaVaeModelSelected: (state, action: PayloadAction<ParameterVAEModel | null>) => {
       const result = zParamsState.shape.animaVaeModel.safeParse(action.payload);
       if (!result.success) {
@@ -647,6 +660,8 @@ export const {
   zImageVaeModelSelected,
   zImageQwen3EncoderModelSelected,
   zImageQwen3SourceModelSelected,
+  ideogram4MagicPromptModelSelected,
+  ideogram4MagicPromptEnabledChanged,
   kleinVaeModelSelected,
   kleinQwen3EncoderModelSelected,
   qwenImageComponentSourceSelected,
@@ -905,6 +920,8 @@ export const selectUpscaleScheduler = createParamsSelector((params) => params.up
 export const selectUpscaleCfgScale = createParamsSelector((params) => params.upscaleCfgScale);
 
 export const selectPositivePromptHistory = createParamsSelector((params) => params.positivePromptHistory);
+export const selectIdeogram4MagicPromptModel = createParamsSelector((params) => params.ideogram4MagicPromptModel);
+export const selectIdeogram4MagicPromptEnabled = createParamsSelector((params) => params.ideogram4MagicPromptEnabled);
 export const selectRefinerCFGScale = createParamsSelector((params) => params.refinerCFGScale);
 export const selectRefinerModel = createParamsSelector((params) => params.refinerModel);
 export const selectIsRefinerModelSelected = createParamsSelector((params) => Boolean(params.refinerModel));

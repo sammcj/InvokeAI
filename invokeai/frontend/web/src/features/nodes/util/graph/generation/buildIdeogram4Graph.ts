@@ -30,7 +30,7 @@ export const buildIdeogram4Graph = async (arg: GraphBuilderArg): Promise<GraphBu
   assert(model.base === 'ideogram4', 'Selected model is not an Ideogram 4 model');
 
   const params = selectParamsSlice(state);
-  const { cfgScale: guidance_scale, steps } = params;
+  const { cfgScale: guidance_scale, steps, ideogram4MagicPromptEnabled, ideogram4MagicPromptModel } = params;
 
   const g = new Graph(getPrefixedId('ideogram4_graph'));
 
@@ -73,7 +73,20 @@ export const buildIdeogram4Graph = async (arg: GraphBuilderArg): Promise<GraphBu
   g.addEdge(modelLoader, 'qwen3_encoder', posCond, 'qwen3_encoder');
   g.addEdge(modelLoader, 'vae', l2i, 'vae');
 
-  g.addEdge(positivePrompt, 'value', posCond, 'prompt');
+  // Ideogram 4 is trained on structured JSON captions, so a plain prompt is optionally expanded by a
+  // local text LLM ("magic prompt") before it reaches the encoder. Without expansion the model tends to
+  // return its baked-in safety-filter card. When disabled or no LLM is selected, the prompt passes through.
+  if (ideogram4MagicPromptEnabled && ideogram4MagicPromptModel) {
+    const expandPrompt = g.addNode({
+      type: 'ideogram4_expand_prompt',
+      id: getPrefixedId('ideogram4_expand_prompt'),
+      text_llm_model: ideogram4MagicPromptModel,
+    });
+    g.addEdge(positivePrompt, 'value', expandPrompt, 'prompt');
+    g.addEdge(expandPrompt, 'value', posCond, 'prompt');
+  } else {
+    g.addEdge(positivePrompt, 'value', posCond, 'prompt');
+  }
   g.addEdge(posCond, 'conditioning', denoise, 'conditioning');
 
   g.addEdge(seed, 'value', denoise, 'seed');

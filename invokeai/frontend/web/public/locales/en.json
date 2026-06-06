@@ -389,6 +389,8 @@
         "expandPrompt": "Expand Prompt",
         "selectTextLLM": "Select Text LLM...",
         "expand": "Expand",
+        "autoExpandOnGenerate": "Auto-expand on generate",
+        "autoExpandOnGenerateDescription": "Ideogram 4 is trained on structured JSON captions. Expand the prompt with the selected Text LLM each time you generate.",
         "noTextLLMInstalledTitle": "No Text LLM installed",
         "noTextLLMInstalledDescription": "Prompt expansion needs a Text LLM (causal language model). We recommend Qwen2.5-1.5B-Instruct (~3 GB) — small, fast, and available as a starter model.",
         "noVisionModelInstalledTitle": "No vision model installed",

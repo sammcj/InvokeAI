@@ -22,9 +22,19 @@ const model = {
 const defaultParams: {
   cfgScale: number | number[];
   steps: number;
+  ideogram4MagicPromptEnabled?: boolean;
+  ideogram4MagicPromptModel?: { key: string; hash: string; name: string; base: string; type: string } | null;
 } = {
   cfgScale: 7,
   steps: 20,
+};
+
+const textLLMModel = {
+  key: 'qwen-text-llm',
+  hash: 'qwen-hash',
+  name: 'Qwen2.5-3B-Instruct',
+  base: 'any',
+  type: 'text_llm',
 };
 
 let params = { ...defaultParams };
@@ -125,6 +135,40 @@ describe('buildIdeogram4Graph', () => {
 
     const denoise = Object.values(g.getGraph().nodes).find((n) => n.type === 'ideogram4_denoise');
     expect(denoise).toMatchObject({ num_steps: 24, guidance_scale: 6 });
+  });
+
+  it('does not add the magic-prompt node when no expansion model is selected', async () => {
+    params = { ...defaultParams, ideogram4MagicPromptEnabled: true, ideogram4MagicPromptModel: null };
+    const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
+
+    const nodeTypes = Object.values(g.getGraph().nodes).map((n) => n.type);
+    expect(nodeTypes).not.toContain('ideogram4_expand_prompt');
+    // The positive prompt feeds the text encoder directly.
+    const edges = g.getGraph().edges;
+    expect(edges.some((e) => e.source.field === 'value' && e.destination.field === 'prompt')).toBe(true);
+  });
+
+  it('splices the magic-prompt node between the prompt and the text encoder when enabled with a model', async () => {
+    params = { ...defaultParams, ideogram4MagicPromptEnabled: true, ideogram4MagicPromptModel: textLLMModel };
+    const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
+
+    const nodes = Object.values(g.getGraph().nodes);
+    const expand = nodes.find((n) => n.type === 'ideogram4_expand_prompt');
+    expect(expand).toBeDefined();
+    expect(expand).toMatchObject({ text_llm_model: textLLMModel });
+
+    const edges = g.getGraph().edges;
+    // positive_prompt -> expand.prompt, and expand.value -> text encoder.prompt.
+    expect(edges.some((e) => e.destination.node_id === expand?.id && e.destination.field === 'prompt')).toBe(true);
+    expect(edges.some((e) => e.source.node_id === expand?.id && e.source.field === 'value')).toBe(true);
+  });
+
+  it('does not add the magic-prompt node when disabled even if a model is selected', async () => {
+    params = { ...defaultParams, ideogram4MagicPromptEnabled: false, ideogram4MagicPromptModel: textLLMModel };
+    const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
+
+    const nodeTypes = Object.values(g.getGraph().nodes).map((n) => n.type);
+    expect(nodeTypes).not.toContain('ideogram4_expand_prompt');
   });
 
   it('adds the image-to-latents node for img2img', async () => {

@@ -842,6 +842,9 @@ export const zParamsState = z.object({
   qwenImageQwenVLEncoderModel: zModelIdentifierField.nullable(), // Optional: Standalone Qwen2.5-VL encoder
   qwenImageQuantization: z.enum(['none', 'int8', 'nf4']), // BitsAndBytes quantization for Qwen VL encoder
   qwenImageShift: z.number().nullable(), // Sigma schedule shift override (e.g. 3.0 for Lightning LoRAs)
+  // Ideogram 4 magic-prompt: auto-expand a plain prompt into the structured caption with a local text LLM
+  ideogram4MagicPromptModel: zModelIdentifierField.nullable().default(null), // TextLLM used to expand prompts
+  ideogram4MagicPromptEnabled: z.boolean().default(true), // Expand the prompt automatically at generation time
   // Z-Image Seed Variance Enhancer settings
   zImageSeedVarianceEnabled: z.boolean(),
   zImageSeedVarianceStrength: z.number().min(0).max(2),
@@ -926,6 +929,8 @@ export const getInitialParamsState = (): ParamsState => ({
   qwenImageQwenVLEncoderModel: null,
   qwenImageQuantization: 'none' as const,
   qwenImageShift: null,
+  ideogram4MagicPromptModel: null,
+  ideogram4MagicPromptEnabled: true,
   zImageSeedVarianceEnabled: false,
   zImageSeedVarianceStrength: 0.1,
   zImageSeedVarianceRandomizePercent: 50,
