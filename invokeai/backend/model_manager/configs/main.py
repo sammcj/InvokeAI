@@ -64,7 +64,12 @@ class MainModelDefaultSettings(BaseModel):
     def from_base(
         cls,
         base: BaseModelType,
-        variant: Flux2VariantType | FluxVariantType | ModelVariantType | ZImageVariantType | None = None,
+        variant: Flux2VariantType
+        | FluxVariantType
+        | Ideogram4VariantType
+        | ModelVariantType
+        | ZImageVariantType
+        | None = None,
     ) -> Self | None:
         match base:
             case BaseModelType.StableDiffusion1:
@@ -94,6 +99,9 @@ class MainModelDefaultSettings(BaseModel):
                     return cls(steps=4, cfg_scale=1.0, width=1024, height=1024)
             case BaseModelType.QwenImage:
                 return cls(steps=40, cfg_scale=4.0, width=1024, height=1024)
+            case BaseModelType.Ideogram4:
+                # Matches the Ideogram 4 denoise node defaults (num_steps=20, guidance_scale=7.0).
+                return cls(steps=20, cfg_scale=7.0, width=1024, height=1024)
             case _:
                 # TODO(psyche): Do we want defaults for other base types?
                 return None
