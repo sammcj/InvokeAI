@@ -29,8 +29,11 @@ class TextLLMPipeline:
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
             messages.append({"role": "user", "content": prompt})
+            # Disable chat-template "thinking" for prompt expansion: reasoning models (e.g. Qwen3,
+            # Qwen3.5) otherwise spend the token budget on a chain-of-thought and never emit the
+            # answer. Templates that don't define this variable simply ignore the kwarg.
             formatted_prompt: str = self._tokenizer.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True
+                messages, tokenize=False, add_generation_prompt=True, enable_thinking=False
             )
         else:
             # Fallback for models without chat template
