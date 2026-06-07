@@ -58,10 +58,14 @@ export const ExpandPromptButton = memo(() => {
 
   const hasModels = modelConfigs.length > 0;
   // For Ideogram 4 the chosen LLM is persisted (shared with auto-expand on generate); other models keep
-  // an ephemeral, click-only selection.
+  // an ephemeral, click-only selection. When nothing is persisted (or the persisted model was removed) we
+  // fall back to the first installed text LLM, matching the auto-select the graph builder uses on generate.
   const isIdeogram4 = mainModelConfig?.base === 'ideogram4';
   const selectedModel = useMemo(
-    () => (isIdeogram4 ? modelConfigs.find((config) => config.key === magicPromptModel?.key) : localSelectedModel),
+    () =>
+      isIdeogram4
+        ? (modelConfigs.find((config) => config.key === magicPromptModel?.key) ?? modelConfigs.at(0))
+        : localSelectedModel,
     [isIdeogram4, modelConfigs, magicPromptModel?.key, localSelectedModel]
   );
 

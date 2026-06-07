@@ -38,10 +38,15 @@ const textLLMModel = {
 };
 
 let params = { ...defaultParams };
+let availableTextLLMs: Array<typeof textLLMModel> = [];
 
 vi.mock('features/controlLayers/store/paramsSlice', () => ({
   selectMainModelConfig: vi.fn(() => model),
   selectParamsSlice: vi.fn(() => params),
+}));
+
+vi.mock('services/api/hooks/modelsByType', () => ({
+  selectTextLLMModels: vi.fn(() => availableTextLLMs),
 }));
 
 vi.mock('features/controlLayers/store/selectors', () => ({
@@ -106,6 +111,7 @@ describe('buildIdeogram4Graph', () => {
   afterEach(() => {
     nextId = 0;
     params = { ...defaultParams };
+    availableTextLLMs = [];
   });
 
   it('includes the model loader, text encoder, denoise and vae decode nodes', async () => {
@@ -137,8 +143,9 @@ describe('buildIdeogram4Graph', () => {
     expect(denoise).toMatchObject({ num_steps: 24, guidance_scale: 6 });
   });
 
-  it('does not add the magic-prompt node when no expansion model is selected', async () => {
+  it('does not add the magic-prompt node when no text LLM is installed', async () => {
     params = { ...defaultParams, ideogram4MagicPromptEnabled: true, ideogram4MagicPromptModel: null };
+    availableTextLLMs = [];
     const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
 
     const nodeTypes = Object.values(g.getGraph().nodes).map((n) => n.type);
@@ -148,8 +155,19 @@ describe('buildIdeogram4Graph', () => {
     expect(edges.some((e) => e.source.field === 'value' && e.destination.field === 'prompt')).toBe(true);
   });
 
+  it('auto-selects the first installed text LLM when none is explicitly chosen', async () => {
+    params = { ...defaultParams, ideogram4MagicPromptEnabled: true, ideogram4MagicPromptModel: null };
+    availableTextLLMs = [textLLMModel];
+    const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
+
+    const expand = Object.values(g.getGraph().nodes).find((n) => n.type === 'ideogram4_expand_prompt');
+    expect(expand).toBeDefined();
+    expect(expand).toMatchObject({ text_llm_model: textLLMModel });
+  });
+
   it('splices the magic-prompt node between the prompt and the text encoder when enabled with a model', async () => {
     params = { ...defaultParams, ideogram4MagicPromptEnabled: true, ideogram4MagicPromptModel: textLLMModel };
+    availableTextLLMs = [textLLMModel];
     const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
 
     const nodes = Object.values(g.getGraph().nodes);
@@ -163,8 +181,22 @@ describe('buildIdeogram4Graph', () => {
     expect(edges.some((e) => e.source.node_id === expand?.id && e.source.field === 'value')).toBe(true);
   });
 
+  it('falls back to the first installed text LLM when the persisted model was removed', async () => {
+    params = {
+      ...defaultParams,
+      ideogram4MagicPromptEnabled: true,
+      ideogram4MagicPromptModel: { ...textLLMModel, key: 'uninstalled-llm' },
+    };
+    availableTextLLMs = [textLLMModel];
+    const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
+
+    const expand = Object.values(g.getGraph().nodes).find((n) => n.type === 'ideogram4_expand_prompt');
+    expect(expand).toMatchObject({ text_llm_model: textLLMModel });
+  });
+
   it('does not add the magic-prompt node when disabled even if a model is selected', async () => {
     params = { ...defaultParams, ideogram4MagicPromptEnabled: false, ideogram4MagicPromptModel: textLLMModel };
+    availableTextLLMs = [textLLMModel];
     const { g } = await buildIdeogram4Graph({ generationMode: 'txt2img', manager: null, state: buildState() });
 
     const nodeTypes = Object.values(g.getGraph().nodes).map((n) => n.type);

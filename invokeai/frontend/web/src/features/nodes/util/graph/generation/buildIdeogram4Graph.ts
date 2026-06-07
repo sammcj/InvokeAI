@@ -13,6 +13,7 @@ import { Graph } from 'features/nodes/util/graph/generation/Graph';
 import { selectCanvasOutputFields } from 'features/nodes/util/graph/graphBuilderUtils';
 import type { GraphBuilderArg, GraphBuilderReturn, ImageOutputNodes } from 'features/nodes/util/graph/types';
 import { selectActiveTab } from 'features/ui/store/uiSelectors';
+import { selectTextLLMModels } from 'services/api/hooks/modelsByType';
 import type { Invocation } from 'services/api/types';
 import { isNonRefinerMainModelConfig } from 'services/api/types';
 import type { Equals } from 'tsafe';
@@ -73,14 +74,19 @@ export const buildIdeogram4Graph = async (arg: GraphBuilderArg): Promise<GraphBu
   g.addEdge(modelLoader, 'qwen3_encoder', posCond, 'qwen3_encoder');
   g.addEdge(modelLoader, 'vae', l2i, 'vae');
 
-  // Ideogram 4 is trained on structured JSON captions, so a plain prompt is optionally expanded by a
-  // local text LLM ("magic prompt") before it reaches the encoder. Without expansion the model tends to
-  // return its baked-in safety-filter card. When disabled or no LLM is selected, the prompt passes through.
-  if (ideogram4MagicPromptEnabled && ideogram4MagicPromptModel) {
+  // Ideogram 4 is trained on structured JSON captions, so a plain prompt is expanded by a local text LLM
+  // ("magic prompt") before it reaches the encoder. Without expansion the model tends to return its
+  // baked-in safety-filter card. Resolve the LLM to use: the explicitly chosen one if still installed,
+  // otherwise auto-select the first available text LLM so generation works without manual setup. Only when
+  // expansion is disabled or no text LLM is installed at all does the prompt pass through unexpanded.
+  const textLLMModels = selectTextLLMModels(state);
+  const magicPromptModel =
+    textLLMModels.find((m) => m.key === ideogram4MagicPromptModel?.key) ?? textLLMModels.at(0) ?? null;
+  if (ideogram4MagicPromptEnabled && magicPromptModel) {
     const expandPrompt = g.addNode({
       type: 'ideogram4_expand_prompt',
       id: getPrefixedId('ideogram4_expand_prompt'),
-      text_llm_model: ideogram4MagicPromptModel,
+      text_llm_model: magicPromptModel,
     });
     g.addEdge(positivePrompt, 'value', expandPrompt, 'prompt');
     g.addEdge(expandPrompt, 'value', posCond, 'prompt');
